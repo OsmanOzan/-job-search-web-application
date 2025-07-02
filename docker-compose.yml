@@ -1,0 +1,62 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - 6379:6379
+
+  backend:
+    build: ./kariyer-clone-backend
+    restart: always
+    ports:
+      - 3001:3000
+    environment:
+      - MONGO_URL=${MONGO_URL}
+      - REDIS_URL=${REDIS_URL}
+    depends_on:
+      - mongo
+      - redis
+
+  frontend:
+    build: ./kariyer-clone-frontend
+    restart: always
+    ports:
+      - 80:80
+    depends_on:
+      - backend
+
+  ai-agent:
+    build: ./ai-agent-service
+    restart: always
+    ports:
+      - 4004:4004
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - backend
+
+  notification:
+    build: ./notification-service
+    restart: always
+    ports:
+      - 4003:4003
+    environment:
+      - MONGO_URL=${MONGO_URL}
+      - REDIS_URL=${REDIS_URL}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+    depends_on:
+      - mongo
+      - redis
+
+volumes:
+  mongo-data:
